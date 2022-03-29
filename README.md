@@ -4,7 +4,7 @@ Job 안에는 여러 Step이 존재하고, Step 안에 Tasklet 혹은 Reader & W
 - Tasklet 하나와 Reader & Processor & Writer 한 묶음이 같은 레벨이다.
 - 따라서, Reader & Processor가 끝나고, Tasklet으로 마무리 짓는 등으로는 만들순 없다.
 
-## MySQL 환경에서 Spring Batch 실행해보기
+# ✔ MySQL 환경에서 Spring Batch 실행해보기
 Spring Batch에서는 Meta Data Table들이 필요하다.
 
 Spring Batch의 메타 데이터는 다음과 같은 내용들을 담고 있다.
@@ -43,3 +43,29 @@ Spring Batch의 메타 데이터는 다음과 같은 내용들을 담고 있다.
 
 ### JOB, JOB_INSTANCE, JOB_EXECUTION의 관계
 ![image](https://user-images.githubusercontent.com/69254943/160365372-8bf6890e-b940-4241-b50d-5815caf11237.png)
+
+# ✔ Spring Batch Job Flow
+- Step은 실제 Batch 작업을 수행하는 역할로, Batch 비즈니스 로직을 처리하는 기능은 Step에 구현되어 있다.
+- Step에서는 Batch로 실제 처리하고자 하는 기능과 설정을 모두 포함하고 있다.
+
+## Step들간의 순서 혹은 처리 흐름을 제어하기 위한 방법
+### Next
+```JAVA
+@Bean
+    public Job stepNextJob() {
+        return jobBuilderFactory.get("stepNextJob")
+                .start(step1())
+                .next(step2())
+                .next(step3())
+                .build();
+    }
+```
+- next()를 사용해 순차적으로 Step들을 연결시킬 수 있다.
+
+### 추가) 지정한 Batch Job만 실행
+```yml
+spring.batch.job.names: ${job.name:NONE}
+```
+- .yml 파일에 위의 옵션을 추가하면, Spring Batch가 실행될 때, Program Arguments로 job.name 값이 넘어오면 해당 값과 일치하는 Job만 실행시킨다.
+- 전달된 값이 없다면, NONE을 할당하여 어떤 Job도 실행되지 않게 한다.
+
