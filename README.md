@@ -49,15 +49,16 @@ Spring Batch의 메타 데이터는 다음과 같은 내용들을 담고 있다.
 - Step에서는 Batch로 실제 처리하고자 하는 기능과 설정을 모두 포함하고 있다.
 
 ## Step들간의 순서 혹은 처리 흐름을 제어하기 위한 방법
-### Next
+### 1) Next
 ```JAVA
 @Bean
-    public Job stepNextJob() {
-        return jobBuilderFactory.get("stepNextJob")
-                .start(step1())
-                .next(step2())
-                .next(step3())
-                .build();
+public Job stepNextJob() {
+    
+    return jobBuilderFactory.get("stepNextJob")
+            .start(step1())
+            .next(step2())
+            .next(step3())
+            .build();
     }
 ```
 - next()를 사용해 순차적으로 Step들을 연결시킬 수 있다.
@@ -69,3 +70,90 @@ spring.batch.job.names: ${job.name:NONE}
 - .yml 파일에 위의 옵션을 추가하면, Spring Batch가 실행될 때, Program Arguments로 job.name 값이 넘어오면 해당 값과 일치하는 Job만 실행시킨다.
 - 전달된 값이 없다면, NONE을 할당하여 어떤 Job도 실행되지 않게 한다.
 
+### 2) 조건별 흐름 제어 (Flow)
+```JAVA
+@Bean
+public Job stepNextConditionalJob() {
+    
+    return jobBuilderFactory.get("stepNextConditionalJob")
+        .start(conditionalJobStep1())
+        .on("FAILED")   //캐치할 ExitStatus 지정 --> FAILDED일 경우
+        .to(conditionalJobStep3())  //다음으로 이동할 Step을 지정 --> step3로 이동
+        .on("*")    //step3의 결과에 관계없이
+        .end() //FlowBuilder를 반환하는 end() --> flow를 종료
+        .from(conditionalJobStep1())    //step1으로부터
+        .on("*")    //FAILDED 외에 모든 경우
+        .to(conditionalJobStep2())  //step2로 이동
+        .next(conditionalJobStep3())    //step2가 정상 종료되면 step3로 이동
+        .on("*")    //step3의 결과에 관계없이
+        .end()  //flow 종료
+        .end()  //FlowBuilder를 종료하는 end()
+        .build();
+}
+```
+
+### 추가) Batch Status vs. Exit Status
+- Batch Status 
+  - Job 또는 Step의 실행 결과를 Spring에서 기록할 때 사용하는 Enum
+- Exit Status
+  - 위의 코드에서 .on()이 참조하는 값은 Batch Status가 아니라, Step의 Exit Status이다.
+  - Step의 실행 후 상태 (static 값)
+
+### 2가지 문제점
+- Step이 담당하는 역할이 2개 이상이 된다.
+  - 실행되는 Step이 처리해야 할 로직 외에도 분기 처리를 위한 Exit Status 값 설정이 필요하다.
+  
+- 다양한 분기 로직 처리가 어렵다.
+  - Exit Status의 커스텀 값을 추가하기 위해서는 Listener를 생성하고, Job Flow에 등록하는 번거로움이 존재한다.
+
+### 3) Decide
+- Spring Batch에서 제공해주는 JobExecutionDecider로, Step들간의 Flow 분기만 담당하는 역할을 한다.
+- 다양한 분기처리가 가능하다.
+
+```JAVA
+@Bean
+public Job deciderJob() {
+
+    return jobBuilderFactory.get("deciderJob")
+            .start(startStep())
+            .next(decider())    //홀수 or 짝수 구분
+            .from(decider())    //decider의 상태가
+                .on("ODD")  //ODD일 때
+                .to(oddStep())  //oddStep으로 간다.
+            .from(decider())    //decider의 상태가
+                .on("EVEN") //EVEN일 때   
+                .to(evenStep()) //evenStep으로 간다.
+            .end()  //builder 종료
+            .build();
+}
+
+@Bean
+public JobExecutionDecider decider() {
+
+        return new OddDecider();
+}
+
+public static class OddDecider implements JobExecutionDecider {
+
+  @Override
+  public FlowExecutionStatus decide(JobExecution jobExecution, StepExecution stepExecution) {
+
+    Random random = new Random();
+
+    int randomNum = random.nextInt(50) + 1;
+    log.info("랜덤숫자: {}", randomNum);
+
+    if (randomNum % 2 == 0) {
+      return new FlowExecutionStatus("EVEN");
+    } else {
+      return new FlowExecutionStatus("ODD");
+    }
+  }
+}
+```
+- Step으로 분기 처리를 하는 것이 아니므로, ExitStatus가 아닌 FlowExecutionStatus로 상태를 관리한다.
+
+Q. 오버라이딩한 decide() 메서드는 언제 실행되는 것일까?   
+코드의 실행을 보면, JobExecutionDecider를 구현한 클래스의 객체(여기서는 OddDecider의 객체)가 생성될 때 실행되는 것으로 보임
+
+    
