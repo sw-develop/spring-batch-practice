@@ -1,8 +1,19 @@
-Spring Batch에서 Job은 하나의 배치 작업 단위이다.   
-Job 안에는 여러 Step이 존재하고, Step 안에 Tasklet 혹은 Reader & Writer & Processor 묶음이 존재한다.   
+# ✔ Spring Batch
 ![image](https://user-images.githubusercontent.com/69254943/160353865-8c559e5c-9a2c-412f-bc25-4bb0b1ffb50a.png)
-- Tasklet 하나와 Reader & Processor & Writer 한 묶음이 같은 레벨이다.
-- 따라서, Reader & Processor가 끝나고, Tasklet으로 마무리 짓는 등으로는 만들순 없다.
+### Job
+- 하나의 배치 작업 단위
+- Job 안에는 여러 Step이 존재한다. 
+
+### Step 
+- 2가지 구성 방식이 존재한다.
+
+1) Tasklet
+- 간단한 처리에 적합함
+- ex) Reader 역할만 필요하고, Writer 역할은 사용하지 않는 경우
+    
+2) Reader & Processor & Writer 묶음 ==> 하나의 Tasklet을 이룸
+- 보편적인 배치 조합
+- Chunk 단위 처리를 수행함 (ChunkOrientedTasklet 구현체 사용)
 
 # ✔ MySQL 환경에서 Spring Batch 실행해보기
 Spring Batch에서는 Meta Data Table들이 필요하다.
@@ -248,3 +259,41 @@ public class ScopeConfiguration {
   
 참고) https://jojoldu.tistory.com/330?category=902551
 
+# ✔ Chunk Oriented Processing
+## Chunk란?
+![image](https://user-images.githubusercontent.com/69254943/163122763-fc5b1cd6-2a2a-4769-8b39-2e0e085c1858.png)
+- Item 단위로 한 번에 하나씩 데이터를 읽고 처리 --> 가공된 데이터들을 별도의 공간에 모음 --> Chunk 단위만큼 쌓이면 Writer에 전달하고 일괄 저장
+- Chunk 단위로 트랜잭션을 수행하기 때문에 실패할 경우 Chunk 만큼만 롤백이 되고, 이전 커밋된 트랜잭션은 반영이 된다. (DB의 트랜잭션과 동일)
+
+## Spring Batch의 Chunk Tasklet 진행 과정
+
+### 관련 클래스
+- Spring Batch에서 Chunk 지향 처리의 전체 로직을 다루는 클래스가 바로 spring-batch-core의 'ChunkOrientedTasklet' 클래스이다.
+    - 멤버변수 ChunkProcessor : Processor & Writer 처리
+    - 멤버변수 ChunkProvider : Reader에서 데이터 가져옴
+
+### 진행 과정
+![image](https://user-images.githubusercontent.com/69254943/163134118-cf4b76cc-6b7c-4648-8cbf-edc2d5b8d559.png)
+
+
+# ✔ ItemReader
+- 데이터를 읽어오는 역할로, DB 뿐만 아니라 File, XML, JSON 등 다양한 데이터 소스를 배치 처리의 입력으로 사용할 수 있다.
+  
+### ItemReader 인터페이스 구현체 예시
+![image](https://user-images.githubusercontent.com/69254943/163134917-0fcca7e9-dc12-4c0c-abe2-793d67a5491e.png)
+- ItemReader 인터페이스
+    - 데이터를 읽어오는 메소드 포함
+- ItemStream 인터페이스
+    - 주기적으로 상태를 저장하고 오류가 발생하면 해당 상태에서 복원하기 위한 마커 기능 수행
+    - 배치 프로세스의 실행 컨텍스트와 연계하여 ItemReader의 상태를 저장하고, 실패한 곳에서 다시 실행할 수 있게 해주는 역할
+
+### ItemReader 구현체 종류
+1. Cursor 기반
+- Database와 SocketTimeout을 충분히 큰 값으로 설정해야 한다.
+- Cursor는 하나의 Connection으로 Batch가 끝날 때까지 사용되기 때문에 Batch가 끝나기 전에 Database와 어플리케이션의 Connection이 먼저 끊어질 수 있다.
+
+2. Paging 기반
+- Batch 수행 시간이 오래 걸리는 경우 PagingItemReader를 사용하는게 낫다.
+- Paging의 경우 한 페이지를 읽을 때마다 Connection을 맺고 끊기 때문에 아무리 많은 데이터라도 DB 연결 타임아웃과 부하없이 수행이 가능하다. 
+- Spring Batch에서는 AbstractPagingItemReader 추상 클래스의 setPageSize()를 통해 PageSize를 지정해주면, offset과 limit을 지정한 값에 맞게 자동으로 생성하여 쿼리를 수행한다.
+    - 각 쿼리가 개별적으로 실행되므로, 실행 쿼리에 조회 결과를 정렬하는 것(order by)를 꼭!! 넣어줘야 한다.
