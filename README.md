@@ -156,4 +156,95 @@ public static class OddDecider implements JobExecutionDecider {
 Q. 오버라이딩한 decide() 메서드는 언제 실행되는 것일까?   
 코드의 실행을 보면, JobExecutionDecider를 구현한 클래스의 객체(여기서는 OddDecider의 객체)가 생성될 때 실행되는 것으로 보임
 
-    
+# ✔ Spring Batch Scope & Job Parameter
+## Job Parameter와 Scope
+- Spring Batch의 경우 외부 or 내부에서 Job Parameter를 받아 여러 Batch 컴포넌트에서 사용할 수 있게 지원한다.
+- Job Parameter를 사용하기 위해서는 항상 Spring Batch 전용 Scope를 선언해야 한다.
+  - 크게 @JobScope와 @StepScope 2가지가 있고, 해당 Scope로 Bean을 생성할 때만 Job Parameters가 생성된다.
+    ```BASH
+    # Job Parameter를 사용하는데, 위의 2가지 Scope 중 하나라도 지정하지 않았을 때 발생하는 에러
+    Caused by: org.springframework.expression.spel.SpelEvaluationException: EL1008E: Property or field 'jobParameters' cannot be found on object of type
+    ```
+  - Job Parameter를 전달받아야 하는 메서드에는 Scope를 지정해줘야 하고, Bean 생성 시점이 언제냐에 따라 JobScope or StepScope가 달라진다.
+  
+## 예시 코드
+```java
+@Slf4j
+@Configuration
+@RequiredArgsConstructor
+public class ScopeConfiguration {
+
+    private final JobBuilderFactory jobBuilderFactory;
+    private final StepBuilderFactory stepBuilderFactory;
+
+    @Bean
+    public Job scopeJob() {
+
+        return jobBuilderFactory.get("scopeJob")
+                .start(scopeStep1(null))
+                .next(scopeStep2())
+                .build();
+    }
+
+    @Bean
+    @JobScope
+    public Step scopeStep1(@Value("#{jobParameters[requestDate]}") String requestDate) {
+
+        return stepBuilderFactory.get("scopeStep1")
+                .tasklet(((contribution, chunkContext) -> {
+                    log.info(">>>>> This is scopeStep1");
+                    log.info(">>>>> requestDate = {}", requestDate);
+                    return RepeatStatus.FINISHED;
+                })).build();
+    }
+
+    @Bean
+    public Step scopeStep2() {
+
+        return stepBuilderFactory.get("scopeStep2")
+                .tasklet(scopeStep2Tasklet(null))
+                .build();
+    }
+
+    @Bean
+    @StepScope
+    public Tasklet scopeStep2Tasklet(@Value("#{jobParameters[requestDate]}") String requestDate) {
+
+        return ((contribution, chunkContext) -> {
+            log.info(">>>>> This is scopeStep2");
+            log.info(">>>>> requestDate = {}", requestDate);
+            return RepeatStatus.FINISHED;
+        });
+    }
+}
+```
+- @JobScope는 Step 선언문에서 사용 가능
+- @StepScope는 Tasklet이나 ItemReader, ItemWriter, ItemProcessor에서 사용 가능
+
+## @JobScope와 @StepScope란
+### Spring Bean의 기본 Scope는 Singleton이다.
+- Bean 생성 시점 : 어플리케이션 실행 시
+- 어플리케이션 실행 시 JVM 내에서 스프링이 Bean마다 하나의 객체만 생성한다.
+  
+### @JobScope & @StepScope
+- @JobScope 지정 : Spring Batch가 Spring 컨테이너를 통해 지정된 Job 실행시점에 해당 컴포넌트를 Spring Bean으로 생성 & Job이 끝나면 삭제됨
+- @StepScope 지정 : Spring Batch가 Spring 컨테이너를 통해 지정된 Step 실행시점에 해당 컴포넌트를 Spring Bean으로 생성 & Step이 끝나면 삭제됨
+- Bean 생성 시점 : 지정된 Job or Step이 실행되는 시점으로 지연 (키포인트!)
+
+### 장점
+1. Job Parameter의 Late Binding이 가능하다.
+    - Job Parameter를 StepExecutionContext나 JobExecutionContext 레벨에서 할당시킬 수 있다.
+    - 어플리케이션이 실행되는 시점에 Job Parameter를 할당해줘야 하는 것이 아니라, Controller나 Service 같은 비즈니스 로직에서 Job Parameter를 할당시킬 수 있다.
+
+2. 동일한 컴포넌트를 병렬 or 동시에 사용할 때 유용하다.
+    - 예시 상황)
+        - Step 내에 Tasklet이 수행되고, 해당 Tasklet 구현체에 멤버 변수, 해당 멤버 변수를 변경하는 로직이 존재하는 경우
+    - @StepScope를 지정하지 않았을 때의 문제점
+        - 해당 Tasklet의 Bean이 어플리케이션 실행 시 1개 생성된다.
+        - Step들을 병렬로 실행하게 되면, 서로 다른 Step에서 하나의 Tasklet을 두고 상태를 변경하려고 할 것이다.
+    - @StepScope를 지정했을 때의 장점
+        - 각각의 Step 실행 시 별도의 Tasklet Bean을 생성하고 관리하기 때문에 서로의 상태에 영향을 주지 않는다.
+  
+  
+참고) https://jojoldu.tistory.com/330?category=902551
+
