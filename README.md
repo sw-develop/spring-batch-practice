@@ -274,6 +274,7 @@ public class ScopeConfiguration {
 
 ### 진행 과정
 ![image](https://user-images.githubusercontent.com/69254943/163134118-cf4b76cc-6b7c-4648-8cbf-edc2d5b8d559.png)
+- Processor는 선택으로, Processor가 없어도 ChunkOrientedTasklet 클래스를 구성할 수 있지만, Reader와 Writer는 필수이다.
 
 
 # ✔ ItemReader
@@ -296,4 +297,10 @@ public class ScopeConfiguration {
 - Batch 수행 시간이 오래 걸리는 경우 PagingItemReader를 사용하는게 낫다.
 - Paging의 경우 한 페이지를 읽을 때마다 Connection을 맺고 끊기 때문에 아무리 많은 데이터라도 DB 연결 타임아웃과 부하없이 수행이 가능하다. 
 - Spring Batch에서는 AbstractPagingItemReader 추상 클래스의 setPageSize()를 통해 PageSize를 지정해주면, offset과 limit을 지정한 값에 맞게 자동으로 생성하여 쿼리를 수행한다.
-    - 각 쿼리가 개별적으로 실행되므로, 실행 쿼리에 조회 결과를 정렬하는 것(order by)를 꼭!! 넣어줘야 한다.
+    - 각 쿼리가 개별적으로 실행되므로, 실행 쿼리에 조회 결과를 정렬하는 것(order by)을 꼭!! 넣어줘야 한다.
+    
+
+참고) https://jojoldu.tistory.com/336?category=902551
+
+
+# ✔ ItemWriter
