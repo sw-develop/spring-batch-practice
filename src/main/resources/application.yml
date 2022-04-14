@@ -5,10 +5,6 @@ spring:
     job:
       names: ${job.name:NONE} #program arguments로 job.name 값이 넘어오면, 해당 값과 일치하는 Job만 실행
 
-logging:
-  level:
-    org.springframework.batch: debug
-
 ---
 spring:
   datasource:
@@ -32,3 +28,16 @@ spring:
   config:
     activate:
       on-profile: mysql
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    org:
+      hibernate:
+        type:
+          descriptor:
+            sql: trace
+    org.springframework.batch: debug
