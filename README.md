@@ -304,3 +304,8 @@ public class ScopeConfiguration {
 
 
 # ✔ ItemWriter
+- Spring Batch에서 사용하는 출력 기능이다.
+- Chunk 단위로 묶인 Item List를 다룬다. (위의 'Chunk 지향 처리' 사진 참고)
+    - Reader와 Processor를 거쳐 처리된 Item을 Chunk 단위 만큼 쌓은 뒤 Writer에 전달한다.
+    
+- Writer가 받은 모든 Item이 처리된 후, Spring Batch가 현재 트랜잭션을 커밋한다. 

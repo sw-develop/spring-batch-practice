@@ -5,7 +5,10 @@ spring:
     job:
       names: ${job.name:NONE} #program arguments로 job.name 값이 넘어오면, 해당 값과 일치하는 Job만 실행
 
-logging.level.org.springframework.batch: DEBUG
+logging:
+  level:
+    org.springframework.batch: debug
+
 ---
 spring:
   datasource:
@@ -14,6 +17,9 @@ spring:
       username: sa
       password:
       driver-class-name: org.h2.Driver
+  config:
+    activate:
+      on-profile: local
 
 ---
 spring:
@@ -23,3 +29,6 @@ spring:
       username: tester
       password: 1234
       driver-class-name: com.mysql.cj.jdbc.Driver
+  config:
+    activate:
+      on-profile: mysql

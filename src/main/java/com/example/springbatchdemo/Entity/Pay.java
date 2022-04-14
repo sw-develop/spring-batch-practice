@@ -7,6 +7,7 @@ import lombok.ToString;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -21,16 +22,15 @@ public class Pay {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss");
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long amount;
     private String txName;
     private LocalDateTime txDateTime;
 
-    public Pay(Long amount, String txName, String txDateTime) {
+    public Pay(Long amount, String txName) {
         this.amount = amount;
         this.txName = txName;
-        this.txDateTime = LocalDateTime.parse(txDateTime, FORMATTER);
     }
 
     public Pay(Long id, Long amount, String txName, String txDateTime) {
