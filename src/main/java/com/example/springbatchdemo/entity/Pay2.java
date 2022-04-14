@@ -1,9 +1,7 @@
-package com.example.springbatchdemo.Entity;
+package com.example.springbatchdemo.entity;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -17,7 +15,7 @@ import java.time.format.DateTimeFormatter;
 @Setter
 @NoArgsConstructor
 @Entity
-public class Pay {
+public class Pay2 {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss");
 
@@ -26,17 +24,19 @@ public class Pay {
     private Long id;
     private Long amount;
     private String txName;
+
+    @CreatedDate
     private LocalDateTime txDateTime;
 
-    public Pay(Long amount, String txName) {
+    public Pay2(Long amount, String txName) {
         this.amount = amount;
         this.txName = txName;
     }
 
-    public Pay(Long id, Long amount, String txName, String txDateTime) {
+    @Builder
+    public Pay2(Long id, Long amount, String txName) {
         this.id = id;
         this.amount = amount;
         this.txName = txName;
-        this.txDateTime = LocalDateTime.parse(txDateTime, FORMATTER);
     }
 }

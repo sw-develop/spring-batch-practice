@@ -31,7 +31,9 @@ spring:
   jpa:
     properties:
       hibernate:
-        format_sql: true
+        show_sql: true
+    hibernate:
+      ddl-auto: create
 
 logging:
   level:
@@ -40,4 +42,5 @@ logging:
         type:
           descriptor:
             sql: trace
-    org.springframework.batch: debug
+      springframework:
+        batch: debug

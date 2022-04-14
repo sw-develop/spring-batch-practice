@@ -308,4 +308,12 @@ public class ScopeConfiguration {
 - Chunk 단위로 묶인 Item List를 다룬다. (위의 'Chunk 지향 처리' 사진 참고)
     - Reader와 Processor를 거쳐 처리된 Item을 Chunk 단위 만큼 쌓은 뒤 Writer에 전달한다.
     
-- Writer가 받은 모든 Item이 처리된 후, Spring Batch가 현재 트랜잭션을 커밋한다. 
+- Writer가 받은 모든 Item이 처리된 후, Spring Batch가 현재 트랜잭션을 커밋한다.
+
+참고) https://jojoldu.tistory.com/339?category=902551
+
+
+# Spring Batch 테스트 코드 작성
+참고
+- https://velog.io/@miz/SpringBatch-Jpa-Test-%EC%84%A4%EC%A0%95
+- https://jojoldu.tistory.com/455

@@ -1,6 +1,7 @@
 package com.example.springbatchdemo.job;
 
-import com.example.springbatchdemo.Entity.Pay;
+import com.example.springbatchdemo.entity.Pay;
+import com.example.springbatchdemo.entity.Pay2;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -25,7 +26,7 @@ public class JpaItemWriterJobConfiguration {
     private final StepBuilderFactory stepBuilderFactory;
     private final EntityManagerFactory entityManagerFactory;
 
-    private static final int chunkSize = 10;
+    private static final int chunkSize = 2;
 
     @Bean
     public Job jpaItemWriterJob() { //구조 잡기
@@ -39,7 +40,7 @@ public class JpaItemWriterJobConfiguration {
     public Step jpaItemWriterStep() {   //구조 잡기
 
         return stepBuilderFactory.get("jpaItemWriterStep")
-                .<Pay, Pay>chunk(chunkSize)
+                .<Pay, Pay2>chunk(chunkSize)
                 .reader(jpaItemWriterReader())
                 .processor(jpaItemProcessor())
                 .writer(jpaItemWriter())
@@ -53,20 +54,20 @@ public class JpaItemWriterJobConfiguration {
                 .name("jpaItemWriterReader")
                 .entityManagerFactory(entityManagerFactory)
                 .pageSize(chunkSize)
-                .queryString("SELECT p FROM Pay p")
+                .queryString("SELECT p FROM Pay p ORDER BY p.id")
                 .build();
     }
 
     @Bean
-    public ItemProcessor<? super Pay, ? extends Pay> jpaItemProcessor() { //실행 내용 작성
+    public ItemProcessor<Pay, Pay2> jpaItemProcessor() { //실행 내용 작성
 
-        return pay -> new Pay(pay.getAmount(), pay.getTxName());
+        return pay -> new Pay2(pay.getAmount(), pay.getTxName());
     }
 
     @Bean
-    public JpaItemWriter<Pay> jpaItemWriter() { //실행 내용 작성
+    public JpaItemWriter<Pay2> jpaItemWriter() { //실행 내용 작성
 
-        JpaItemWriter<Pay> jpaItemWriter = new JpaItemWriter<>();
+        JpaItemWriter<Pay2> jpaItemWriter = new JpaItemWriter<>();
         jpaItemWriter.setEntityManagerFactory(entityManagerFactory);
         return jpaItemWriter;
     }

@@ -1,6 +1,6 @@
 package com.example.springbatchdemo.job;
 
-import com.example.springbatchdemo.Entity.Pay;
+import com.example.springbatchdemo.entity.Pay;
 import com.example.springbatchdemo.repository.PayRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.persistence.EntityManagerFactory;
-import java.util.List;
 
 @Slf4j
 @Configuration
@@ -72,13 +71,7 @@ public class CustomItemWriterJobConfiguration {
     @Bean
     public ItemWriter<Pay> customItemWriter() {
 
-        return new ItemWriter<Pay>() {
-            @Override
-            public void write(List<? extends Pay> items) throws Exception {
-
-                payRepository.deleteAll(items);
-            }
-        };
+        return items -> payRepository.deleteAll(items);
     }
 
 }
