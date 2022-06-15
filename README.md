@@ -1,5 +1,7 @@
-# ✔ Spring Batch
+# 📌 Spring Batch
 ![image](https://user-images.githubusercontent.com/69254943/160353865-8c559e5c-9a2c-412f-bc25-4bb0b1ffb50a.png)
+<br>
+
 ### Job
 - 하나의 배치 작업 단위
 - Job 안에는 여러 Step이 존재한다. 
@@ -15,7 +17,9 @@
 - 보편적인 배치 조합
 - Chunk 단위 처리를 수행함 (ChunkOrientedTasklet 구현체 사용)
 
-# ✔ MySQL 환경에서 Spring Batch 실행해보기
+<br>
+
+# 📌 MySQL 환경에서 Spring Batch 실행해보기
 Spring Batch에서는 Meta Data Table들이 필요하다.
 
 Spring Batch의 메타 데이터는 다음과 같은 내용들을 담고 있다.
@@ -29,6 +33,7 @@ Spring Batch의 메타 데이터는 다음과 같은 내용들을 담고 있다.
 
 해당 테이블들이 있어야만 Spring Batch가 정상 작동한다.
 기본적으로 H2 데이터베이스를 사용할 경우엔 해당 테이블을 Spring Boot가 실행시 자동으로 생성해주지만, 다른 데이터베이스를 사용하는 경우 직접 생성해야 한다. (schema-mysql.sql 같은 파일이 존재하므로 이를 사용해 테이블을 생성하면 된다)
+<br>
 
 ### BATCH_JOB_INSTANCE 테이블
 ![image](https://user-images.githubusercontent.com/69254943/160358737-a30e7da0-9566-4473-ac35-5e2475da8735.png)
@@ -55,9 +60,12 @@ Spring Batch의 메타 데이터는 다음과 같은 내용들을 담고 있다.
 ### JOB, JOB_INSTANCE, JOB_EXECUTION의 관계
 ![image](https://user-images.githubusercontent.com/69254943/160365372-8bf6890e-b940-4241-b50d-5815caf11237.png)
 
-# ✔ Spring Batch Job Flow
+<br>
+
+# 📌 Spring Batch Job Flow
 - Step은 실제 Batch 작업을 수행하는 역할로, Batch 비즈니스 로직을 처리하는 기능은 Step에 구현되어 있다.
 - Step에서는 Batch로 실제 처리하고자 하는 기능과 설정을 모두 포함하고 있다.
+<br>
 
 ## Step들간의 순서 혹은 처리 흐름을 제어하기 위한 방법
 ### 1) Next
@@ -167,7 +175,11 @@ public static class OddDecider implements JobExecutionDecider {
 Q. 오버라이딩한 decide() 메서드는 언제 실행되는 것일까?   
 코드의 실행을 보면, JobExecutionDecider를 구현한 클래스의 객체(여기서는 OddDecider의 객체)가 생성될 때 실행되는 것으로 보임
 
-# ✔ Spring Batch Scope & Job Parameter
+<br>
+
+# 📌 Spring Batch Scope & Job Parameter
+<br>
+
 ## Job Parameter와 Scope
 - Spring Batch의 경우 외부 or 내부에서 Job Parameter를 받아 여러 Batch 컴포넌트에서 사용할 수 있게 지원한다.
 - Job Parameter를 사용하기 위해서는 항상 Spring Batch 전용 Scope를 선언해야 한다.
@@ -177,6 +189,8 @@ Q. 오버라이딩한 decide() 메서드는 언제 실행되는 것일까?
     Caused by: org.springframework.expression.spel.SpelEvaluationException: EL1008E: Property or field 'jobParameters' cannot be found on object of type
     ```
   - Job Parameter를 전달받아야 하는 메서드에는 Scope를 지정해줘야 하고, Bean 생성 시점이 언제냐에 따라 JobScope or StepScope가 달라진다.
+
+<br>
   
 ## 예시 코드
 ```java
@@ -232,6 +246,8 @@ public class ScopeConfiguration {
 - @JobScope는 Step 선언문에서 사용 가능
 - @StepScope는 Tasklet이나 ItemReader, ItemWriter, ItemProcessor에서 사용 가능
 
+<br>
+
 ## @JobScope와 @StepScope란
 ### Spring Bean의 기본 Scope는 Singleton이다.
 - Bean 생성 시점 : 어플리케이션 실행 시
@@ -259,11 +275,17 @@ public class ScopeConfiguration {
   
 참고) https://jojoldu.tistory.com/330?category=902551
 
-# ✔ Chunk Oriented Processing
+<br>
+
+# 📌 Chunk Oriented Processing
+<br>
+
 ## Chunk란?
 ![image](https://user-images.githubusercontent.com/69254943/163122763-fc5b1cd6-2a2a-4769-8b39-2e0e085c1858.png)
 - Item 단위로 한 번에 하나씩 데이터를 읽고 처리 --> 가공된 데이터들을 별도의 공간에 모음 --> Chunk 단위만큼 쌓이면 Writer에 전달하고 일괄 저장
 - Chunk 단위로 트랜잭션을 수행하기 때문에 실패할 경우 Chunk 만큼만 롤백이 되고, 이전 커밋된 트랜잭션은 반영이 된다. (DB의 트랜잭션과 동일)
+
+<br>
 
 ## Spring Batch의 Chunk Tasklet 진행 과정
 
@@ -276,9 +298,12 @@ public class ScopeConfiguration {
 ![image](https://user-images.githubusercontent.com/69254943/163134118-cf4b76cc-6b7c-4648-8cbf-edc2d5b8d559.png)
 - Processor는 선택으로, Processor가 없어도 ChunkOrientedTasklet 클래스를 구성할 수 있지만, Reader와 Writer는 필수이다.
 
+<br>
 
-# ✔ ItemReader
+# 📌 ItemReader
 - 데이터를 읽어오는 역할로, DB 뿐만 아니라 File, XML, JSON 등 다양한 데이터 소스를 배치 처리의 입력으로 사용할 수 있다.
+
+<br>
   
 ### ItemReader 인터페이스 구현체 예시
 ![image](https://user-images.githubusercontent.com/69254943/163134917-0fcca7e9-dc12-4c0c-abe2-793d67a5491e.png)
@@ -302,8 +327,9 @@ public class ScopeConfiguration {
 
 참고) https://jojoldu.tistory.com/336?category=902551
 
+<br>
 
-# ✔ ItemWriter
+# 📌 ItemWriter
 - Spring Batch에서 사용하는 출력 기능이다.
 - Chunk 단위로 묶인 Item List를 다룬다. (위의 'Chunk 지향 처리' 사진 참고)
     - Reader와 Processor를 거쳐 처리된 Item을 Chunk 단위 만큼 쌓은 뒤 Writer에 전달한다.
@@ -312,6 +338,7 @@ public class ScopeConfiguration {
 
 참고) https://jojoldu.tistory.com/339?category=902551
 
+<br>
 
 # Spring Batch 테스트 코드 작성
 참고
