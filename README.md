@@ -1,5 +1,6 @@
 # 📌 Spring Batch
 ![image](https://user-images.githubusercontent.com/69254943/160353865-8c559e5c-9a2c-412f-bc25-4bb0b1ffb50a.png)
+
 <br>
 
 ### Job
@@ -33,6 +34,7 @@ Spring Batch의 메타 데이터는 다음과 같은 내용들을 담고 있다.
 
 해당 테이블들이 있어야만 Spring Batch가 정상 작동한다.
 기본적으로 H2 데이터베이스를 사용할 경우엔 해당 테이블을 Spring Boot가 실행시 자동으로 생성해주지만, 다른 데이터베이스를 사용하는 경우 직접 생성해야 한다. (schema-mysql.sql 같은 파일이 존재하므로 이를 사용해 테이블을 생성하면 된다)
+
 <br>
 
 ### BATCH_JOB_INSTANCE 테이블
@@ -46,6 +48,8 @@ Spring Batch의 메타 데이터는 다음과 같은 내용들을 담고 있다.
     ```BASH
   Caused by: org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException: A job instance already exists and is complete for parameters
     ```
+    
+<br>
 
 ### BATCH_JOB_EXECUTION
 - JOB_EXECUTION은 JOB_INSTANCE와 N:1 관계이다.
@@ -57,6 +61,8 @@ Spring Batch의 메타 데이터는 다음과 같은 내용들을 담고 있다.
 - 즉, 동일한 Job Parameter로 생성된 BATCH_JOB_INSTANCE가 2번 실행되었고, 첫 번째는 실패, 두 번째는 성공했다는 것이다.
 - 동일한 Job Parameter로 2번 실행했는데 에러가 발생하지 않았다는 점을 통해 Spring Batch는 '동일한 Job Parameter로 성공한 기록이 있을 때만 재수행이 불가능'하다는 것을 알 수 있다.
 
+<br>
+
 ### JOB, JOB_INSTANCE, JOB_EXECUTION의 관계
 ![image](https://user-images.githubusercontent.com/69254943/160365372-8bf6890e-b940-4241-b50d-5815caf11237.png)
 
@@ -65,9 +71,13 @@ Spring Batch의 메타 데이터는 다음과 같은 내용들을 담고 있다.
 # 📌 Spring Batch Job Flow
 - Step은 실제 Batch 작업을 수행하는 역할로, Batch 비즈니스 로직을 처리하는 기능은 Step에 구현되어 있다.
 - Step에서는 Batch로 실제 처리하고자 하는 기능과 설정을 모두 포함하고 있다.
+
 <br>
 
 ## Step들간의 순서 혹은 처리 흐름을 제어하기 위한 방법
+
+<br>
+
 ### 1) Next
 ```JAVA
 @Bean
@@ -82,12 +92,16 @@ public Job stepNextJob() {
 ```
 - next()를 사용해 순차적으로 Step들을 연결시킬 수 있다.
 
+<br>
+
 ### 추가) 지정한 Batch Job만 실행
 ```yml
 spring.batch.job.names: ${job.name:NONE}
 ```
 - .yml 파일에 위의 옵션을 추가하면, Spring Batch가 실행될 때, Program Arguments로 job.name 값이 넘어오면 해당 값과 일치하는 Job만 실행시킨다.
 - 전달된 값이 없다면, NONE을 할당하여 어떤 Job도 실행되지 않게 한다.
+
+<br>
 
 ### 2) 조건별 흐름 제어 (Flow)
 ```JAVA
@@ -111,6 +125,8 @@ public Job stepNextConditionalJob() {
 }
 ```
 
+<br>
+
 ### 추가) Batch Status vs. Exit Status
 - Batch Status 
   - Job 또는 Step의 실행 결과를 Spring에서 기록할 때 사용하는 Enum
@@ -118,12 +134,16 @@ public Job stepNextConditionalJob() {
   - 위의 코드에서 .on()이 참조하는 값은 Batch Status가 아니라, Step의 Exit Status이다.
   - Step의 실행 후 상태 (static 값)
 
+<br>
+
 ### 2가지 문제점
 - Step이 담당하는 역할이 2개 이상이 된다.
   - 실행되는 Step이 처리해야 할 로직 외에도 분기 처리를 위한 Exit Status 값 설정이 필요하다.
   
 - 다양한 분기 로직 처리가 어렵다.
   - Exit Status의 커스텀 값을 추가하기 위해서는 Listener를 생성하고, Job Flow에 등록하는 번거로움이 존재한다.
+
+<br>
 
 ### 3) Decide
 - Spring Batch에서 제공해주는 JobExecutionDecider로, Step들간의 Flow 분기만 담당하는 역할을 한다.
@@ -178,6 +198,7 @@ Q. 오버라이딩한 decide() 메서드는 언제 실행되는 것일까?
 <br>
 
 # 📌 Spring Batch Scope & Job Parameter
+
 <br>
 
 ## Job Parameter와 Scope
@@ -249,14 +270,21 @@ public class ScopeConfiguration {
 <br>
 
 ## @JobScope와 @StepScope란
+
+<br>
+
 ### Spring Bean의 기본 Scope는 Singleton이다.
 - Bean 생성 시점 : 어플리케이션 실행 시
 - 어플리케이션 실행 시 JVM 내에서 스프링이 Bean마다 하나의 객체만 생성한다.
+  
+<br>  
   
 ### @JobScope & @StepScope
 - @JobScope 지정 : Spring Batch가 Spring 컨테이너를 통해 지정된 Job 실행시점에 해당 컴포넌트를 Spring Bean으로 생성 & Job이 끝나면 삭제됨
 - @StepScope 지정 : Spring Batch가 Spring 컨테이너를 통해 지정된 Step 실행시점에 해당 컴포넌트를 Spring Bean으로 생성 & Step이 끝나면 삭제됨
 - Bean 생성 시점 : 지정된 Job or Step이 실행되는 시점으로 지연 (키포인트!)
+
+<br>
 
 ### 장점
 1. Job Parameter의 Late Binding이 가능하다.
@@ -278,6 +306,7 @@ public class ScopeConfiguration {
 <br>
 
 # 📌 Chunk Oriented Processing
+
 <br>
 
 ## Chunk란?
@@ -289,10 +318,14 @@ public class ScopeConfiguration {
 
 ## Spring Batch의 Chunk Tasklet 진행 과정
 
+<br>
+
 ### 관련 클래스
 - Spring Batch에서 Chunk 지향 처리의 전체 로직을 다루는 클래스가 바로 spring-batch-core의 'ChunkOrientedTasklet' 클래스이다.
     - 멤버변수 ChunkProcessor : Processor & Writer 처리
     - 멤버변수 ChunkProvider : Reader에서 데이터 가져옴
+
+<br>
 
 ### 진행 과정
 ![image](https://user-images.githubusercontent.com/69254943/163134118-cf4b76cc-6b7c-4648-8cbf-edc2d5b8d559.png)
@@ -312,6 +345,8 @@ public class ScopeConfiguration {
 - ItemStream 인터페이스
     - 주기적으로 상태를 저장하고 오류가 발생하면 해당 상태에서 복원하기 위한 마커 기능 수행
     - 배치 프로세스의 실행 컨텍스트와 연계하여 ItemReader의 상태를 저장하고, 실패한 곳에서 다시 실행할 수 있게 해주는 역할
+
+<br>
 
 ### ItemReader 구현체 종류
 1. Cursor 기반
